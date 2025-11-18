@@ -14,11 +14,21 @@ datasource db {
 }
 
 model Task {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
-  description String?
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  description String?   @db.Text
+  completed   Boolean   @default(false)
+  priority    String    @default("MEDIUM") // HIGH, MEDIUM, LOW
+  dueDate     DateTime?
+  category    String?
+  tags        String?   // Stored as JSON string
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([completed, createdAt])
+  @@index([priority])
+  @@index([category])
+  @@index([dueDate])
 }
 
