@@ -1,0 +1,505 @@
+<template>
+  <div class="todo-app">
+    <div class="container">
+      <header class="app-header">
+        <h1>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+          </svg>
+          My Tasks
+        </h1>
+        <p class="subtitle">Stay organized and get things done</p>
+      </header>
+
+      <form @submit.prevent="createTask" class="task-form">
+        <div class="form-group">
+          <input 
+            v-model="title" 
+            type="text"
+            placeholder="Task title" 
+            required 
+            class="input-field"
+            :disabled="loading"
+          />
+          <input 
+            v-model="desc" 
+            type="text"
+            placeholder="Description (optional)" 
+            class="input-field"
+            :disabled="loading"
+          />
+        </div>
+        <button type="submit" class="btn-add" :disabled="loading || !title.trim()">
+          <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Task
+        </button>
+      </form>
+
+      <div v-if="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <div class="tasks-section">
+        <div v-if="loading && tasks.length === 0" class="empty-state">
+          <div class="spinner"></div>
+          <p>Loading tasks...</p>
+        </div>
+
+        <div v-else-if="tasks.length === 0" class="empty-state">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <h3>No tasks yet</h3>
+          <p>Add your first task to get started!</p>
+        </div>
+
+        <transition-group v-else name="task-list" tag="ul" class="task-list">
+          <li 
+            v-for="task in tasks" 
+            :key="task.id" 
+            class="task-item"
+            :class="{ 'completing': completingIds.has(task.id) }"
+          >
+            <div class="task-content">
+              <div class="task-header">
+                <h3 class="task-title">{{ task.title }}</h3>
+                <span class="task-date">{{ formatDate(task.createdAt) }}</span>
+              </div>
+              <p v-if="task.description" class="task-description">{{ task.description }}</p>
+            </div>
+            <button 
+              @click="markDone(task.id)" 
+              class="btn-complete"
+              :disabled="completingIds.has(task.id)"
+            >
+              <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              {{ completingIds.has(task.id) ? 'Completing...' : 'Complete' }}
+            </button>
+          </li>
+        </transition-group>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+
+const props = defineProps({ 
+  apiUrl: { type: String, default: 'http://localhost:4000' } 
+});
+
+const title = ref('');
+const desc = ref('');
+const tasks = ref([]);
+const loading = ref(false);
+const error = ref('');
+const completingIds = ref(new Set());
+
+async function load() {
+  try {
+    loading.value = true;
+    error.value = '';
+    const res = await fetch(`${props.apiUrl}/tasks`);
+    if (!res.ok) throw new Error('Failed to load tasks');
+    tasks.value = await res.json();
+  } catch (err) {
+    error.value = 'Failed to load tasks. Please try again.';
+    console.error('Load error:', err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(load);
+
+async function createTask() {
+  if (!title.value.trim()) return;
+  
+  try {
+    loading.value = true;
+    error.value = '';
+    const res = await fetch(`${props.apiUrl}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        title: title.value.trim(), 
+        description: desc.value.trim() || undefined 
+      })
+    });
+    
+    if (!res.ok) throw new Error('Failed to create task');
+    
+    title.value = '';
+    desc.value = '';
+    await load();
+  } catch (err) {
+    error.value = 'Failed to create task. Please try again.';
+    console.error('Create error:', err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function markDone(id) {
+  try {
+    completingIds.value.add(id);
+    error.value = '';
+    const res = await fetch(`${props.apiUrl}/tasks/${id}/done`, { 
+      method: 'POST' 
+    });
+    
+    if (!res.ok) throw new Error('Failed to complete task');
+    
+    // Remove from list with animation
+    setTimeout(async () => {
+      await load();
+      completingIds.value.delete(id);
+    }, 300);
+  } catch (err) {
+    error.value = 'Failed to complete task. Please try again.';
+    console.error('Complete error:', err);
+    completingIds.value.delete(id);
+  }
+}
+
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now - date;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+</script>
+
+<style scoped>
+* {
+  box-sizing: border-box;
+}
+
+.todo-app {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.container {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.app-header {
+  text-align: center;
+  color: white;
+  margin-bottom: 32px;
+  padding-top: 40px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+}
+
+.subtitle {
+  margin: 8px 0 0;
+  font-size: 1rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.task-form {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  margin-bottom: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.input-field {
+  padding: 14px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-field:disabled {
+  background: #f9fafb;
+  cursor: not-allowed;
+}
+
+.btn-add {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-add:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-add:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.icon-small {
+  width: 20px;
+  height: 20px;
+}
+
+.tasks-section {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  opacity: 0.3;
+}
+
+.empty-state h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  color: #374151;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.3s;
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-item:hover {
+  background: #f9fafb;
+}
+
+.task-item.completing {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.task-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-date {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.task-description {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.btn-complete {
+  padding: 10px 20px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-complete:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-complete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* List transitions */
+.task-list-enter-active,
+.task-list-leave-active {
+  transition: all 0.3s ease;
+}
+
+.task-list-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.task-list-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.task-list-move {
+  transition: transform 0.3s ease;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .app-header h1 {
+    font-size: 2rem;
+  }
+  
+  .task-form {
+    padding: 20px;
+  }
+  
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .btn-complete {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .task-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
+</style>
