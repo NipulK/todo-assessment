@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  db:
+    image: mysql:8.0
+    container_name: todo_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: example_root_pw
+      MYSQL_DATABASE: todo
+      MYSQL_USER: todo_user
+      MYSQL_PASSWORD: todo_pass
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: ./backend
+    container_name: todo_backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: "mysql://todo_user:todo_pass@db:3306/todo"
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    command: ["sh", "-c", "npx prisma migrate deploy && node -r ts-node/register src/index.ts"]
+
+  frontend:
+    build: ./frontend
+    container_name: todo_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: "http://backend:4000"
+    ports:
+      - "3000:3000"
+    command: ["npx", "astro", "dev", "--host", "0.0.0.0", "--port", "3000"]
+
+volumes:
+  db_data:
