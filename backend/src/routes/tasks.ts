@@ -16,7 +16,7 @@ router.get('/', async (req, res) => {
       category, 
       search, 
       showCompleted = 'false',
-      limit = '20'
+      limit = '5'
     } = req.query;
 
     const where: any = {};
