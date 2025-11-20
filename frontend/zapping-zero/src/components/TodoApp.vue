@@ -775,13 +775,30 @@ function isOverdue(task) {
 
 .stat-card.active {
   border-color: #667eea;
-  background: rgba(102, 126, 234, 0.1);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.stat-card.active .stat-value {
+  color: white;
+}
+
+.stat-card.active .stat-label {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .dark-mode .stat-card.active {
   border-color: #818cf8;
-  background: rgba(129, 140, 248, 0.15);
+  background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+  box-shadow: 0 6px 20px rgba(129, 140, 248, 0.4);
+}
+
+.dark-mode .stat-card.active .stat-value {
+  color: white;
+}
+
+.dark-mode .stat-card.active .stat-label {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .stat-card.stat-warning {
