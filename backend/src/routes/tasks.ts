@@ -22,7 +22,9 @@ router.get('/', async (req, res) => {
     const where: any = {};
     
     // Filter by completion status
-    if (showCompleted === 'false') {
+    if (showCompleted === 'true') {
+      where.completed = true;
+    } else {
       where.completed = false;
     }
     
