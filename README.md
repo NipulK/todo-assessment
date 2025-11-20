@@ -21,14 +21,33 @@ This is a simple yet elegant todo task management application where users can cr
 
 ## ✨ Features
 
+### Core Functionality
 - ✅ Create tasks with title and optional description
 - ✅ View the 5 most recent uncompleted tasks
 - ✅ Mark tasks as completed with a single click
 - ✅ Completed tasks are automatically hidden from view
-- ✅ Clean and intuitive user interface with animations
+- ✅ Interactive statistics dashboard showing pending, completed, overdue, and total tasks
+- ✅ **Click on "Pending" or "Completed" stats cards** to toggle between viewing active and completed tasks
+- ✅ Mark completed tasks as incomplete (uncomplete functionality)
+
+### User Experience
+- ✅ Clean and intuitive user interface with smooth animations
 - ✅ Real-time task updates
-- ✅ Responsive design
+- ✅ Responsive design that works on all devices
+- ✅ Dark mode support with theme toggle
+- ✅ Visual feedback for all user actions
 - ✅ Error handling and loading states
+
+### Advanced Features
+- ✅ Task priority levels (High, Medium, Low)
+- ✅ Due dates with overdue indicators
+- ✅ Task categories (Work, Personal, Shopping, Health, Learning, Other)
+- ✅ Task tags for better organization
+- ✅ Search functionality across task titles and descriptions
+- ✅ Filter tasks by priority and category
+- ✅ Edit existing tasks
+- ✅ Delete tasks with confirmation modal
+- ✅ Persistent data storage across restarts
 
 ## 🛠 Tech Stack
 
