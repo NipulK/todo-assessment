@@ -33,19 +33,19 @@
 
       <!-- Statistics Dashboard -->
       <div class="stats-dashboard" v-if="stats">
-        <div class="stat-card">
+        <div class="stat-card" :class="{ 'active': !showCompleted }" @click="showPendingTasks" role="button" tabindex="0" title="Click to view pending tasks">
           <div class="stat-value">{{ stats.pending }}</div>
           <div class="stat-label">Pending</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" :class="{ 'active': showCompleted }" @click="showCompletedTasks" role="button" tabindex="0" title="Click to view completed tasks">
           <div class="stat-value">{{ stats.completed }}</div>
           <div class="stat-label">Completed</div>
         </div>
-        <div class="stat-card" :class="{ 'stat-warning': stats.overdue > 0 }">
+        <div class="stat-card" :class="{ 'stat-warning': stats.overdue > 0 }" @click="showOverdueTasks" role="button" tabindex="0" title="Click to view overdue tasks">
           <div class="stat-value">{{ stats.overdue }}</div>
           <div class="stat-label">Overdue</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" @click="showAllTasks" role="button" tabindex="0" title="Click to view all tasks">
           <div class="stat-value">{{ stats.total }}</div>
           <div class="stat-label">Total</div>
         </div>
@@ -400,6 +400,39 @@ function toggleShowCompleted() {
   load();
 }
 
+// Stat card click handlers
+function showPendingTasks() {
+  showCompleted.value = false;
+  filterPriority.value = '';
+  filterCategory.value = '';
+  searchQuery.value = '';
+  load();
+}
+
+function showCompletedTasks() {
+  showCompleted.value = true;
+  filterPriority.value = '';
+  filterCategory.value = '';
+  searchQuery.value = '';
+  load();
+}
+
+function showOverdueTasks() {
+  showCompleted.value = false;
+  filterPriority.value = '';
+  filterCategory.value = '';
+  searchQuery.value = '';
+  load();
+}
+
+function showAllTasks() {
+  showCompleted.value = false;
+  filterPriority.value = '';
+  filterCategory.value = '';
+  searchQuery.value = '';
+  load();
+}
+
 // Tags
 function addTagFromInput() {
   if (tagInput.value.trim()) {
@@ -725,7 +758,9 @@ function isOverdue(task) {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: 2px solid transparent;
 }
 
 .dark-mode .stat-card {
@@ -735,11 +770,27 @@ function isOverdue(task) {
 
 .stat-card:hover {
   transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.active {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.dark-mode .stat-card.active {
+  border-color: #818cf8;
+  background: rgba(129, 140, 248, 0.15);
 }
 
 .stat-card.stat-warning {
   background: rgba(239, 68, 68, 0.1);
   border: 2px solid #ef4444;
+}
+
+.stat-card.stat-warning:hover {
+  background: rgba(239, 68, 68, 0.15);
 }
 
 .stat-value {
