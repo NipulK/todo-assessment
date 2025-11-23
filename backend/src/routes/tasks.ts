@@ -228,7 +228,14 @@ router.delete('/:id', async (req, res) => {
  * Marks a task as completed
  */
 router.post('/:id/done', async (req, res) => {
-  const id = Number(req.params.id);
+  const idParam = req.params.id;
+  
+  // Check if the ID contains a decimal point (float)
+  if (idParam.includes('.') || idParam.includes(',')) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
+  
+  const id = Number(idParam);
   
   // Validation: id must be a valid number
   if (Number.isNaN(id)) {
